@@ -84,20 +84,20 @@ void TransformToStart(pcl::PointXYZI const * const pi, pcl::PointXYZI * const po
 	float ty = s * transform[4];
 	float tz = s * transform[5];
 
-	//先平移，然后绕z轴旋转
-	float x1 = cos(rz) * (pi->x - tx) - sin(rz) * (pi->y - ty);
-	float y1 = sin(rz) * (pi->x - tx) + cos(rz) * (pi->y - ty);
-	float z1 = (pi->z - tz);
+	//先平移，然后绕x轴逆旋转
+	float x1 = (pi->x - tx);
+	float y1 = cos(rx) * (pi->y - ty) + sin(rx) * (pi->z - tz);
+	float z1 = -sin(rx) * (pi->y - ty) + cos(rx) * (pi->z - tz);
 
-	//绕y轴旋转
+	//绕y轴逆旋转
 	float x2 = cos(ry) * x1 - sin(ry) * z1;
 	float y2 = y1;
 	float z2 = sin(ry) * x1 + cos(ry) * z1;
 
-	//绕x轴旋转
-	po->x = x2;
-	po->y = cos(rx) * y2 - sin(rx) * z2;
-	po->z = sin(rx) * y2 + cos(rx) * z2;
+	//绕z轴逆旋转
+	po->x = cos(rz) * x2 + sin(rz) * y2;
+	po->y = -sin(rz) * x2 + cos(rz) * y2;
+	po->z = z2;
 	po->intensity = pi->intensity;
 
 }
@@ -115,20 +115,20 @@ void TransformToEnd(pcl::PointXYZI const * const pi, pcl::PointXYZI * const po)
 	float ty = s * transform[4];
 	float tz = s * transform[5];
 
-	//先平移再绕z轴旋转
-	float x1 = cos(rz) * (pi->x - tx) - sin(rz) * (pi->y - ty);
-	float y1 = sin(rz) * (pi->x - tx) + cos(rz) * (pi->y - ty);
-	float z1 = (pi->z - tz);
+	//先平移再绕x轴逆旋转
+	float x1 = (pi->x - tx);
+	float y1 = cos(rx) * (pi->y - ty) + sin(rx) * (pi->z - tz);
+	float z1 = -sin(rx) * (pi->y - ty) + cos(rx) * (pi->z - tz);
 
-	//绕y轴旋转
+	//绕y轴逆旋转
 	float x2 = cos(ry) * x1 - sin(ry) * z1;
 	float y2 = y1;
 	float z2 = sin(ry) * x1 + cos(ry) * z1;
 
-	//绕x轴旋转
-	float x3 = x2;
-	float y3 = cos(rx) * y2 - sin(rx) * z2;
-	float z3 = sin(rx) * y3 + cos(rx) * z2;
+	//绕z轴逆旋转
+	float x3 = cos(rz) * x2 + sin(rz) * y2;
+	float y3 = -sin(rz) * x2 + cos(rz) * y2;
+	float z3 = z2;
 
 	rx = transform[0];
 	ry = transform[1]; 
@@ -138,18 +138,20 @@ void TransformToEnd(pcl::PointXYZI const * const pi, pcl::PointXYZI * const po)
 	tz = transform[5];
 
 
-	//绕x轴旋转
-	float x4 = x3;
-	float y4 = cos(rx) * y3 - sin(rx) * z3;
-	float z4 = sin(rx) * y3 + cos(rx) * z3;
+	//绕z轴旋转
+	float x4 = cos(rz) * x3 - sin(rz) * y3;
+	float y4 = sin(rz) * x3 + cos(rz) * y3;
+	float z4 = z3;
 
-	float x5 = cos(ry) * x4 - sin(ry) * z4;
+    //绕y轴旋转
+	float x5 = cos(ry) * x4 + sin(ry) * z4;
 	float y5 = y4;
-	float z5 = sin(ry) * x4 + cos(ry) * z4;
+	float z5 = -sin(ry) * x4 + cos(ry) * z4;
 
-	float x6 = cos(rz) * x5 - sin(rz) * y5;
-	float y6 = sin(rz) * x5 + cos(rz) * y5;
-	float z6 = z5;
+    //绕x轴旋转
+	float x6 = x5;
+	float y6 = cos(rx) * y5 - sin(rx) * z5;
+	float z6 = sin(rx) * y5 + cos(rx) * z5;
 
 	po->x = x6 + tx;
 	po->y = y6 + ty;
@@ -361,70 +363,68 @@ int main(int argc,char **argv)
 					{ 
 						TransformToStart(&cornerPointsSharp->points[i], &pointSel);  //将每个边缘点转换到第一个点的坐标系下
 
-
 						if(iterCount % 5 == 0)
 						{
-						kdtreeCornerLast->nearestKSearch(pointSel, 1, pointSearchInd, pointSearchSqDis);		//kd树查找最近点
-						int closestPointInd = -1, minPointInd2 = -1;    //保存构成边缘线的两个点下标
-
-						if(pointSearchSqDis[0] < 25)  //pointSearchSqDis保存距离信息,从近到远排序
-						{
-							closestPointInd = pointSearchInd[0];   //最近的点下标
-
-							int closestPointScan = int(laserCloudCornerLast->points[closestPointInd].intensity);		//最近的点对应的线号
-
-							float pointSqDis, minPointSqDis2 = 25;
-
-							//寻找距离目标点最近距离的点
-							for(int j = closestPointInd + 1; j < laserCloudCornerLastNum; j ++)
+							kdtreeCornerLast->nearestKSearch(pointSel, 1, pointSearchInd, pointSearchSqDis);		//kd树查找最近点
+							int closestPointInd = -1, minPointInd2 = -1;    //保存构成边缘线的两个点下标
+							if(pointSearchSqDis[0] < 25)  //pointSearchSqDis保存距离信息,从近到远排序
 							{
-								if(int(laserCloudCornerLast->points[j].intensity)> closestPointScan + 2.5)    //非相邻线
-								{
-									break;
-								}
+								closestPointInd = pointSearchInd[0];   //最近的点下标
 
-								pointSqDis = (laserCloudCornerLast->points[j].x - pointSel.x) * 
-											 (laserCloudCornerLast->points[j].x - pointSel.x) +
-											 (laserCloudCornerLast->points[j].y - pointSel.y) *
-											 (laserCloudCornerLast->points[j].y - pointSel.y) +
-											 (laserCloudCornerLast->points[j].z - pointSel.z) * 
-											 (laserCloudCornerLast->points[j].z - pointSel.z);    //距离
+								int closestPointScan = int(laserCloudCornerLast->points[closestPointInd].intensity);		//最近的点对应的线号
 
-								if(int(laserCloudCornerLast->points[j].intensity) > closestPointScan)    //相邻线
+								float pointSqDis, minPointSqDis2 = 25;
+
+								//寻找距离目标点最近距离的点
+								for(int j = closestPointInd + 1; j < laserCloudCornerLastNum; j ++)
 								{
-									if(pointSqDis < minPointSqDis2)
+									if(int(laserCloudCornerLast->points[j].intensity)> closestPointScan + 1.5)    //非相邻线
 									{
-										minPointSqDis2 = pointSqDis;  //更新最小距离
-										minPointInd2 = j;             //更新下标
+										break;
+									}
+
+									pointSqDis = (laserCloudCornerLast->points[j].x - pointSel.x) * 
+												 (laserCloudCornerLast->points[j].x - pointSel.x) +
+												 (laserCloudCornerLast->points[j].y - pointSel.y) *
+												 (laserCloudCornerLast->points[j].y - pointSel.y) +
+												 (laserCloudCornerLast->points[j].z - pointSel.z) * 
+												 (laserCloudCornerLast->points[j].z - pointSel.z);    //距离
+
+									if(int(laserCloudCornerLast->points[j].intensity) > closestPointScan)    //相邻线
+									{
+										if(pointSqDis < minPointSqDis2)
+										{
+											minPointSqDis2 = pointSqDis;  //更新最小距离
+											minPointInd2 = j;             //更新下标
+										}
 									}
 								}
-							}
-							for(int j = closestPointInd - 1; j >= 0; j --)
-							{
-								if(int(laserCloudCornerLast->points[j].intensity) < closestPointScan - 2.5)    //非相邻线
+								for(int j = closestPointInd - 1; j >= 0; j --)
 								{
-									break;
-								}
+									if(int(laserCloudCornerLast->points[j].intensity) < closestPointScan - 1.5)    //非相邻线
+									{
+										break;
+									}
 
-								pointSqDis = (laserCloudCornerLast->points[j].x - pointSel.x) * 
-											 (laserCloudCornerLast->points[j].x - pointSel.x) +
-											 (laserCloudCornerLast->points[j].y - pointSel.y) *
-											 (laserCloudCornerLast->points[j].y - pointSel.y) +
-											 (laserCloudCornerLast->points[j].z - pointSel.z) * 
-											 (laserCloudCornerLast->points[j].z - pointSel.z);         //距离
+									pointSqDis = (laserCloudCornerLast->points[j].x - pointSel.x) * 
+												 (laserCloudCornerLast->points[j].x - pointSel.x) +
+												 (laserCloudCornerLast->points[j].y - pointSel.y) *
+												 (laserCloudCornerLast->points[j].y - pointSel.y) +
+												 (laserCloudCornerLast->points[j].z - pointSel.z) * 
+												 (laserCloudCornerLast->points[j].z - pointSel.z);         //距离
 								
-								if(int(laserCloudCornerLast->points[j].intensity) < closestPointScan)    //相邻线
-								{
-									if(pointSqDis < minPointSqDis2)
+									if(int(laserCloudCornerLast->points[j].intensity) < closestPointScan)    //相邻线
 									{
-										minPointSqDis2 = pointSqDis;   //更新最小距离
-										minPointInd2 = j;              //更新下标
+										if(pointSqDis < minPointSqDis2)
+										{
+											minPointSqDis2 = pointSqDis;   //更新最小距离
+											minPointInd2 = j;              //更新下标
+										}
 									}
 								}
 							}
-						}
-						pointSearchCornerInd1[i] = closestPointInd;
-						pointSearchCornerInd2[i] = minPointInd2;
+							pointSearchCornerInd1[i] = closestPointInd;
+							pointSearchCornerInd2[i] = minPointInd2;
 						}
 
 
@@ -435,6 +435,7 @@ int main(int argc,char **argv)
 
 							tripod1 = laserCloudCornerLast->points[pointSearchCornerInd1[i]];
 							tripod2 = laserCloudCornerLast->points[pointSearchCornerInd2[i]];
+
 
 							float x0 = pointSel.x;
 							float y0 = pointSel.y;
@@ -499,108 +500,106 @@ int main(int argc,char **argv)
 						}
 					}
 
-				
-
 					//平面点同样处理
 					for(int i = 0; i < surfPointsFlatNum; i ++)
 					{
 						TransformToStart(&surfPointsFlat->points[i], &pointSel);
-
+						
 						if(iterCount % 5 == 0)
 						{
 
-						kdtreeSurfLast->nearestKSearch(pointSel, 1, pointSearchInd, pointSearchSqDis);    //kd树查找最近点
-						int closestPointInd = -1, minPointInd2 = -1, minPointInd3 = -1;
-						if(pointSearchSqDis[0] < 25)
-						{
-							closestPointInd = pointSearchInd[0];
-							int closestPointScan = int(laserCloudSurfLast->points[closestPointInd].intensity);   //最近点线号
-							
-							float pointSqDis, minPointSqDis2 = 25, minPointSqDis3 = 25;
-							for(int j = closestPointInd + 1; j < laserCloudSurfLastNum; j ++)
-							{
-								if(int(laserCloudSurfLast->points[j].intensity) > closestPointScan + 2.5)    //非相邻线
-								{
-									break;
-								}
+							kdtreeSurfLast->nearestKSearch(pointSel, 1, pointSearchInd, pointSearchSqDis);    //kd树查找最近点
 
-								pointSqDis = (laserCloudSurfLast->points[j].x - pointSel.x) *
-											 (laserCloudSurfLast->points[j].x - pointSel.x) +
-										     (laserCloudSurfLast->points[j].y - pointSel.y) *
-											 (laserCloudSurfLast->points[j].y - pointSel.y) +
-											 (laserCloudSurfLast->points[j].z - pointSel.z) *
-											 (laserCloudSurfLast->points[j].z - pointSel.z);
+							int closestPointInd = -1, minPointInd2 = -1, minPointInd3 = -1;
+							if(pointSearchSqDis[0] < 25)
+							{
+								closestPointInd = pointSearchInd[0];
+								int closestPointScan = int(laserCloudSurfLast->points[closestPointInd].intensity);   //最近点线号
+							
+								float pointSqDis, minPointSqDis2 = 25, minPointSqDis3 = 25;
+								for(int j = closestPointInd + 1; j < laserCloudSurfLastNum; j ++)
+								{
+									if(int(laserCloudSurfLast->points[j].intensity) > closestPointScan + 1.5)    //非相邻线
+									{
+										break;
+									}
+
+									pointSqDis = (laserCloudSurfLast->points[j].x - pointSel.x) *
+												 (laserCloudSurfLast->points[j].x - pointSel.x) +
+											     (laserCloudSurfLast->points[j].y - pointSel.y) *
+												 (laserCloudSurfLast->points[j].y - pointSel.y) +
+												 (laserCloudSurfLast->points[j].z - pointSel.z) *
+												 (laserCloudSurfLast->points[j].z - pointSel.z);
 								
 	
-								if(int(laserCloudSurfLast->points[j].intensity) <= closestPointScan)
-								{
-									if(pointSqDis < minPointSqDis2)
+									if(int(laserCloudSurfLast->points[j].intensity) <= closestPointScan)
 									{
-										minPointSqDis2 = pointSqDis;
-										minPointInd2 = j;
+										if(pointSqDis < minPointSqDis2)
+										{
+											minPointSqDis2 = pointSqDis;
+											minPointInd2 = j;
+										}
 									}
-								}
-								else
-								{
-									if(pointSqDis < minPointSqDis3)
+									else
 									{
-										minPointSqDis3 = pointSqDis;
-										minPointInd3 = j;
+										if(pointSqDis < minPointSqDis3)
+										{
+											minPointSqDis3 = pointSqDis;
+											minPointInd3 = j;
+										}
 									}
-								}
 
-							}
+								}
 	
-							for(int j = closestPointInd - 1; j >= 0; j --)
-							{
-								if(int(laserCloudSurfLast->points[j].intensity) < closestPointScan - 2.5)
+								for(int j = closestPointInd - 1; j >= 0; j --)
 								{
-									break;
-								}
-
-								pointSqDis = (laserCloudSurfLast->points[j].x - pointSel.x) *
-											 (laserCloudSurfLast->points[j].x - pointSel.x) +
-											 (laserCloudSurfLast->points[j].y - pointSel.y) *
-											 (laserCloudSurfLast->points[j].y - pointSel.y) +
-											 (laserCloudSurfLast->points[j].z - pointSel.z) *
-											 (laserCloudSurfLast->points[j].z - pointSel.z);
-
-
-								if(int(laserCloudSurfLast->points[j].intensity) >= closestPointScan)
-								{
-									if(pointSqDis < minPointSqDis2)
+									if(int(laserCloudSurfLast->points[j].intensity) < closestPointScan - 1.5)
 									{
-										minPointSqDis2 = pointSqDis;
-										minPointInd2 = j;
+										break;
+									}
+
+									pointSqDis = (laserCloudSurfLast->points[j].x - pointSel.x) *
+												 (laserCloudSurfLast->points[j].x - pointSel.x) +
+												 (laserCloudSurfLast->points[j].y - pointSel.y) *
+												 (laserCloudSurfLast->points[j].y - pointSel.y) +
+												 (laserCloudSurfLast->points[j].z - pointSel.z) *
+												 (laserCloudSurfLast->points[j].z - pointSel.z);
+
+
+									if(int(laserCloudSurfLast->points[j].intensity) >= closestPointScan)
+									{
+										if(pointSqDis < minPointSqDis2)
+										{
+											minPointSqDis2 = pointSqDis;
+											minPointInd2 = j;
+										}
+									}
+									else
+									{
+										if(pointSqDis < minPointSqDis3)
+										{
+											minPointSqDis3 = pointSqDis;
+											minPointInd3 = j;
+										}
 									}
 								}
-								else
-								{
-									if(pointSqDis < minPointSqDis3)
-									{
-										minPointSqDis3 = pointSqDis;
-										minPointInd3 = j;
-									}
-								}
+
 							}
 
-						}
+							pointSearchSurfInd1[i] = closestPointInd;
+							pointSearchSurfInd2[i] = minPointInd2;
+							pointSearchSurfInd3[i] = minPointInd3;
 
-						pointSearchSurfInd1[i] = closestPointInd;
-						pointSearchSurfInd2[i] = minPointInd2;
-						pointSearchSurfInd3[i] = minPointInd3;
 						}
 
 
 						if(pointSearchSurfInd2[i] >= 0 && pointSearchSurfInd3[i] >= 0)
 						{
-							//tripod1 = laserCloudSurfLast->points[closestPointInd];
-							//tripod2 = laserCloudSurfLast->points[minPointInd2];
-							//tripod3 = laserCloudSurfLast->points[minPointInd3];
 
 							tripod1 = laserCloudSurfLast->points[pointSearchSurfInd1[i]];
 							tripod2 = laserCloudSurfLast->points[pointSearchSurfInd2[i]];
 							tripod3 = laserCloudSurfLast->points[pointSearchSurfInd3[i]];
+
 
 							float pa = (tripod2.y - tripod1.y) * (tripod3.z - tripod1.z)
 									 - (tripod3.y - tripod1.y) * (tripod2.z - tripod1.z);
@@ -644,7 +643,6 @@ int main(int argc,char **argv)
 						continue;
 					}
 
-
 					cv::Mat matA(pointSelNum, 6, CV_32F, cv::Scalar::all(0));
 					cv::Mat matAt(6, pointSelNum, CV_32F, cv::Scalar::all(0));
 					cv::Mat matAtA(6, 6, CV_32F, cv::Scalar::all(0));
@@ -669,7 +667,7 @@ int main(int argc,char **argv)
 						float ty = transform[4];
 						float tz = transform[5];
 
-						float arx = (crx * sry * srz *pointOri.x + crx * crz * sry * pointOri.y + srx * sry * pointOri.z + tx * crx * sry * srz - ty * crx * crz * sry - tz * srx * sry) * coeff.x + (srx * srz * pointOri.x - crz * srx * pointOri.y + crx *pointOri.z + ty * crz * srx - tz * crx - tx * srx * srz) * coeff.y + (crx * cry * srz * pointOri.x - crx * cry * crz * pointOri.y - cry * srx * pointOri.z + tz * cry * srx + ty * crx * cry * crz - tx * crx * cry * srz) * coeff.z;
+						float arx = (-crx * sry * srz *pointOri.x + crx * crz * sry * pointOri.y + srx * sry * pointOri.z + tx * crx * sry * srz - ty * crx * crz * sry - tz * srx * sry) * coeff.x + (srx * srz * pointOri.x - crz * srx * pointOri.y + crx *pointOri.z + ty * crz * srx - tz * crx - tx * srx * srz) * coeff.y + (crx * cry * srz * pointOri.x - crx * cry * crz * pointOri.y - cry * srx * pointOri.z + tz * cry * srx + ty * crx * cry * crz - tx * crx * cry * srz) * coeff.z;
 							   
 						float ary = ((-crz * sry - cry * srx * srz) * pointOri.x + (cry * crz * srx - sry * srz) * pointOri.y - crx * cry * pointOri.z + tx * (crz * sry + cry * srx * srz) + ty * (sry * srz - cry * crz * srx) + tz * crx * cry) * coeff.x + ((cry * crz - srx * sry * srz) * pointOri.x + (cry * srz + crz * srx * sry) * pointOri.y - crx * sry * pointOri.z + tz * crx * sry - ty * (cry * srz + crz * srx * sry) - tx * (cry * crz - srx * sry * srz)) * coeff.z;
 									     
@@ -691,12 +689,14 @@ int main(int argc,char **argv)
 						matA.at<float>(i,4) = aty;
 						matA.at<float>(i,5) = atz;
 						matB.at<float>(i, 0) = -0.05 * d2;
+
 					}
 
 					
 					cv::transpose(matA, matAt);
 					matAtA = matAt * matA;
 					matAtB = matAt * matB;
+
 
 					cv::solve(matAtA, matAtB, matX, cv::DECOMP_QR);   //(JTJ)X=-JF
 
@@ -759,9 +759,8 @@ int main(int argc,char **argv)
 									  + pow(rad2deg(matX.at<float>(1,0)), 2)
 									  + pow(rad2deg(matX.at<float>(2,0)), 2));
 
-					float deltaT = sqrt(pow(matX.at<float>(3, 0) * 100, 2)
-							
-							+ pow(matX.at<float>(4, 0) * 100, 2)
+					float deltaT = sqrt(pow(matX.at<float>(3, 0) * 100, 2)	
+									  + pow(matX.at<float>(4, 0) * 100, 2)
 									  + pow(matX.at<float>(5, 0) * 100, 2));
 
 					if(deltaR < 0.1 && deltaT < 0.1)
@@ -772,32 +771,36 @@ int main(int argc,char **argv)
 
 			}
 
+
 			float rx, ry, rz, tx, ty, tz;
-			AccumulateRotation(transformSum[0], transformSum[1], transformSum[2], -transform[0], -transform[1], -transform[2], rx, ry, rz);
+			//AccumulateRotation(transformSum[0], transformSum[1], transformSum[2], -transform[0], -transform[1], -transform[2], rx, ry, rz);
 
-			//绕z轴旋转
-			float x1 = cos(rz) * transform[3] - sin(rz) * transform[4];
-			float y1 = sin(rz) * transform[3] + cos(rz) * transform[4];
-			float z1 = transform[5];
+			rx = transformSum[0] + transform[0];
+			ry = transformSum[1] + transform[1];
+			rz = transformSum[2] + transform[2];
 
-			//绕y轴旋转
-			float x2 = cos(ry) * x1 - sin(ry) * z1;
+			float x1 = transform[3];
+			float y1 = cos(transform[0]) * transform[4] + sin(transform[0]) * transform[5];
+			float z1 = -sin(transform[0]) * transform[4] + cos(transform[0]) * transform[5];
+
+			float x2 = cos(transform[1]) * x1 - sin(transform[1]) * z1;
 			float y2 = y1;
-			float z2 = sin(ry) * x1 + cos(ry) * z1;
+			float z2 = sin(transform[1]) * x1 + cos(transform[1]) * z1;
 
-			//绕x轴旋转
-			tx = transformSum[3] - x2; 
-			ty = transformSum[4] - (cos(rx) * y2 - sin(rx) * z2);
-			tz = transformSum[5] - (sin(rx) * y2 + cos(rx) * z2);
+			float x3 = cos(transform[2]) * x2 + sin(transform[2]) * y2;
+			float y3 = -sin(transform[2]) * x2 + cos(transform[2]) * y2;
+			float z3 = z2;
 
+			tx = transformSum[3] + x3;
+			ty = transformSum[4] + y3;
+			tz = transformSum[5] + z3;
 
-			transformSum[0] = rx; 
+			transformSum[0] = rx;
 			transformSum[1] = ry;
 			transformSum[2] = rz;
 			transformSum[3] = tx;
 			transformSum[4] = ty;
 			transformSum[5] = tz;
-
 
 			geometry_msgs::Quaternion geoQuat = tf::createQuaternionMsgFromRollPitchYaw(rx, ry, rz);
 	
@@ -811,8 +814,7 @@ int main(int argc,char **argv)
 			laserOdometry.pose.pose.position.z = tz;
 			pubLaserOdometry.publish(laserOdometry);
 
-
-			std::cout << std::setprecision(15) << timeSurfPointsLessFlat << '\t' << tx << '\t' << ty << '\t' << tz << std::endl;
+			//std::cout << "transformSum : " << transformSum[0] << '\t' << transformSum[1] << '\t' << transformSum[2] << '\t' << transformSum[3] << '\t' << transformSum[4] << '\t' << transformSum[5] << std::endl;
 
 
 			//将次边缘点转换到地图坐标系下

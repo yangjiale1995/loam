@@ -1,4 +1,5 @@
 <launch>
 	<node pkg="loam" type="scanRegistration" name="scanRegistration" output="screen"/>
 	<node pkg="loam" type="laserOdometry" name="laserOdometry" output="screen"/>
+	<node pkg="loam" type="laserMapping" name="laserMapping" output="screen"/>
 </launch>
