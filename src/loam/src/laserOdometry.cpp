@@ -59,7 +59,7 @@ int laserCloudSurfLastNum;
 
 
 float transform[6] = {0};      //前三个表示旋转，后三个表示平移
-float transformSum[6] = {0};   //???
+float transformSum[6] = {0};   //累积位姿
 
 //边缘点和对应的边缘线两个点
 int pointSelCornerInd[40000];
