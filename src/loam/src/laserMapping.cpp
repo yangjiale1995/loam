@@ -51,10 +51,12 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudCornerLast(new pcl::PointCloud<pc
 pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudSurfLast(new pcl::PointCloud<pcl::PointXYZI>);
 
 
+//laserCloudCornerStack2下采样结果
 pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudCornerStack(new pcl::PointCloud<pcl::PointXYZI>);
 pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudSurfStack(new pcl::PointCloud<pcl::PointXYZI>);
 
 
+//点云×transformTobeMapped
 pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudCornerStack2(new pcl::PointCloud<pcl::PointXYZI>);
 pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudSurfStack2(new pcl::PointCloud<pcl::PointXYZI>);
 
@@ -427,8 +429,8 @@ int main(int argc,char **argv)
 			if(frameCount >= stackFrameNum)
 			{
 				transformAssociateToMap();    //更新transformTobeMapped
-				std::cout << "transformTobeMapped = " << transformTobeMapped[0] << '\t' << transformTobeMapped[1] << '\t' << transformTobeMapped[2] << '\t' << transformTobeMapped[3] << '\t' << transformTobeMapped[4] << '\t' << transformTobeMapped[5] << std::endl;
 
+				//stack2保存转换后的点云
 				int laserCloudCornerLaserNum = laserCloudCornerLast->points.size();
 				for(int i = 0; i < laserCloudCornerLaserNum; i ++)
 				{
@@ -458,16 +460,6 @@ int main(int argc,char **argv)
 
 				//laserCloudCenWidth = 10 && laserCloudCenHeight = 10 && laserCloudCenDepth = 5
 				//cube = 50 * 50 * 50
-				
-				/*
-				(-525,-475)中心为-500	centerCubeI = 0
-				(-125,-75)中心为-100	centerCubeI = 8
-				(-75,-25)中心为-50	centerCubeI = 9
-				(-25,25)中心为0	centerCubeI = 10 
-
-				*/
-
-
 
 				//计算网格下标
 				int centerCubeI = int((transformTobeMapped[3] + 25.0) / 50.0) + laserCloudCenWidth;
@@ -700,7 +692,6 @@ int main(int argc,char **argv)
 														 - 10.0 * sqrt(3.0) * sqrt(squaredSide1);
 											float check2 = 100.0 + squaredSide1 - squaredSide2
 														 + 10.0 * sqrt(3.0) * sqrt(squaredSide1);
-
 											if(check1 < 0 && check2 > 0)
 											{
 												isInLaserFOV = true;
@@ -733,7 +724,6 @@ int main(int argc,char **argv)
 				}
 				int laserCloudCornerFromMapNum = laserCloudCornerFromMap->points.size();
 				int laserCloudSurfFromMapNum = laserCloudSurfFromMap->points.size();
-
 
 
 				int laserCloudCornerStackNum2 = laserCloudCornerStack2->points.size();
@@ -855,23 +845,23 @@ int main(int argc,char **argv)
 									float z2 = cz - 0.1 * matV1.at<float>(0, 2);
 
 
-									float a012 = sqrt(((x0 - x1)*(y0 - y2) - (x0 - x2)*(y0 - y1))
-											   * ((x0 - x1)*(y0 - y2) - (x0 - x2)*(y0 - y1))
-											   + ((x0 - x1)*(z0 - z2) - (x0 - x2)*(z0 - z1))
-											   * ((x0 - x1)*(z0 - z2) - (x0 - x2)*(z0 - z1))
-											   + ((y0 - y1)*(z0 - z2) - (y0 - y2)*(z0 - z1))
-											   * ((y0 - y1)*(z0 - z2) - (y0 - y2)*(z0 - z1)));
+									float a012 = sqrt(((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))
+											   * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))
+											   + ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1))
+											   * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1))
+											   + ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1))
+											   * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1)));
 												 
-									float l12 = sqrt((x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2) + (z1 - z2)*(     z1 - z2));
+									float l12 = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
 												   
-									float la = ((y1 - y2)*((x0 - x1)*(y0 - y2) - (x0 - x2)*(y0 - y1))
-											 + (z1 - z2)*((x0 - x1)*(z0 - z2) - (x0 - x2)*(z0 - z1))) / a012      / l12;
+									float la = ((y1 - y2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))
+											 + (z1 - z2) * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1))) / a012 / l12;
 												
-									float lb = -((x1 - x2)*((x0 - x1)*(y0 - y2) - (x0 - x2)*(y0 - y1))
-											 - (z1 - z2)*((y0 - y1)*(z0 - z2) - (y0 - y2)*(z0 - z1))) / a012      / l12;
+									float lb = -((x1 - x2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))
+											 - (z1 - z2) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1))) / a012 / l12;
 														 
-									float lc = -((x1 - x2)*((x0 - x1)*(z0 - z2) - (x0 - x2)*(z0 - z1))
-											 + (y1 - y2)*((y0 - y1)*(z0 - z2) - (y0 - y2)*(z0 - z1))) / a012      / l12;
+									float lc = -((x1 - x2) * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1))
+											 + (y1 - y2) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1))) / a012 / l12;
 														
 									float ld2 = a012 / l12;   //点线距
 								    
@@ -980,32 +970,29 @@ int main(int argc,char **argv)
 						}
 
 
-
-						cv::Mat matA(laserCloudSelNum, 0, CV_32F, cv::Scalar::all(0));
+						cv::Mat matA(laserCloudSelNum, 6, CV_32F, cv::Scalar::all(0));
 						cv::Mat matAt(6, laserCloudSelNum, CV_32F, cv::Scalar::all(0));
 						cv::Mat matAtA(6, 6, CV_32F, cv::Scalar::all(0));
 						cv::Mat matB(laserCloudSelNum, 1, CV_32F, cv::Scalar::all(0));
 						cv::Mat matAtB(6, 1, CV_32F, cv::Scalar::all(0));
 						cv::Mat matX(6, 1, CV_32F, cv::Scalar::all(0));
 
-
 						for(int i = 0; i < laserCloudSelNum; i ++)
 						{
 							pointOri = laserCloudOri->points[i];
 							coeff = coeffSel->points[i];
-
-							float arx = (crx*sry*srz*pointOri.x + crx*crz*sry*pointOri.y - srx*sry*pointOri.z) * coeff.x
-									  + (-srx*srz*pointOri.x - crz*srx*pointOri.y - crx*pointOri.z) * coeff.y
-									  + (crx*cry*srz*pointOri.x + crx*cry*crz*pointOri.y - cry*srx*pointOri.z) * coeff.z;
+							float arx = (crx * sry * srz * pointOri.x + crx * crz * sry * pointOri.y - srx * sry * pointOri.z) * coeff.x
+									  + (-srx * srz * pointOri.x - crz * srx * pointOri.y - crx * pointOri.z) * coeff.y
+									  + (crx * cry * srz * pointOri.x + crx * cry * crz * pointOri.y - cry * srx * pointOri.z) * coeff.z;
 							   
-							float ary = ((cry*srx*srz - crz*sry)*pointOri.x
-									  + (sry*srz + cry*crz*srx)*pointOri.y + crx*cry*pointOri.z) * coeff.x
-									  + ((-cry*crz - srx*sry*srz)*pointOri.x
-									  + (cry*srz - crz*srx*sry)*pointOri.y - crx*sry*pointOri.z) * coeff.z;
+							float ary = ((cry * srx * srz - crz * sry) * pointOri.x
+									  + (sry * srz + cry * crz * srx) * pointOri.y + crx * cry * pointOri.z) * coeff.x
+									  + ((-cry * crz - srx * sry * srz) * pointOri.x
+									  + (cry * srz - crz * srx * sry) * pointOri.y - crx * sry * pointOri.z) * coeff.z;
 								    
-							float arz = ((crz*srx*sry - cry*srz)*pointOri.x + (-cry*crz-srx*sry*srz)*pointOri.y)*coeff.x
-									  + (crx*crz*pointOri.x - crx*srz*pointOri.y) * coeff.y
-									  + ((sry*srz + cry*crz*srx)*pointOri.x + (crz*sry-cry*srx*srz)*pointOri.y)*coeff.z;
+							float arz = ((crz * srx * sry - cry * srz) * pointOri.x + (-cry * crz - srx * sry * srz) * pointOri.y) * coeff.x
+									  + (crx * crz * pointOri.x - crx * srz * pointOri.y) * coeff.y
+									  + ((sry * srz + cry * crz * srx) * pointOri.x + (crz * sry - cry * srx * srz) * pointOri.y) * coeff.z;
 
 						
 							matA.at<float>(i, 0) = arx;
@@ -1017,11 +1004,13 @@ int main(int argc,char **argv)
 							matB.at<float>(i, 0) = -coeff.intensity; 
 						}
 
+
 						cv::transpose(matA, matAt);
 						matAtA = matAt * matA;
 						matAtB = matAt * matB;
 
 						cv::solve(matAtA, matAtB, matX, cv::DECOMP_QR);
+
 
 						if(iterCount == 0)
 						{
@@ -1062,7 +1051,6 @@ int main(int argc,char **argv)
 						}
 
 
-
 						transformTobeMapped[0] += matX.at<float>(0, 0);
 						transformTobeMapped[1] += matX.at<float>(1, 0);
 						transformTobeMapped[2] += matX.at<float>(2, 0);
@@ -1086,7 +1074,11 @@ int main(int argc,char **argv)
 
 					}
 					
-					transformUpdate();
+					/*
+						transformAftMapped = transformTobeMapped
+						transformBefMapped = transformSum
+					*/
+					transformUpdate();  
 				}
 
 
@@ -1097,7 +1089,7 @@ int main(int argc,char **argv)
 					//计算该点所处的网格下标
 					int cubeI = int((pointSel.x + 25.0) / 50.0) + laserCloudCenWidth;
 					int cubeJ = int((pointSel.y + 25.0) / 50.0) + laserCloudCenHeight;
-					int cubeK = int((pointSel.z + 25.0) / 50.0) + laserCloudDepth;
+					int cubeK = int((pointSel.z + 25.0) / 50.0) + laserCloudCenDepth;
 
 					if(pointSel.x + 25.0 < 0)  cubeI --;
 					if(pointSel.y + 25.0 < 0)  cubeJ --;
@@ -1108,7 +1100,7 @@ int main(int argc,char **argv)
 					   cubeJ >= 0 && cubeJ < laserCloudHeight &&
 					   cubeK >= 0 && cubeK < laserCloudDepth)
 					{
-						int cubeInd = cubeI + laserCloudWidth * cubeJ + laserCloudWidth * laserCloudHeight * cubeK;
+						int cubeInd = cubeI * laserCloudHeight * laserCloudDepth + cubeJ * laserCloudDepth + cubeK;
 						laserCloudCornerArray[cubeInd]->push_back(pointSel);
 					}
 				}
@@ -1130,12 +1122,12 @@ int main(int argc,char **argv)
 					   cubeJ >= 0 && cubeJ < laserCloudHeight &&
 					   cubeK >= 0 && cubeK < laserCloudDepth)
 					{
-						int cubeInd = cubeI + laserCloudWidth * cubeJ + laserCloudWidth * laserCloudHeight * cubeK;
+						int cubeInd = cubeI * laserCloudHeight * laserCloudDepth + cubeJ * laserCloudDepth + cubeK;
 						laserCloudSurfArray[cubeInd]->push_back(pointSel);
 					}
 				}
 
-
+				//对valid的数组进行下采样
 				for(int i = 0; i < laserCloudValidNum; i ++)
 				{
 					int ind = laserCloudValidInd[i];
@@ -1148,11 +1140,12 @@ int main(int argc,char **argv)
 					downSizeFilterSurf.setInputCloud(laserCloudSurfArray[ind]);
 					downSizeFilterSurf.filter(*laserCloudSurfArray2[ind]);
 
+					//laserCloudCornerArray = laserCloudCornerArray2
 					pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudTemp = laserCloudCornerArray[ind];
 					laserCloudCornerArray[ind] = laserCloudCornerArray2[ind];
 					laserCloudCornerArray2[ind] = laserCloudTemp;
 
-
+					//laserCloudSurfArray = laserCloudSurfArray2
 					laserCloudTemp = laserCloudSurfArray[ind];
 					laserCloudSurfArray[ind] = laserCloudSurfArray2[ind];
 					laserCloudSurfArray2[ind] = laserCloudTemp;
