@@ -250,7 +250,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
 	{
 		pcl::PointCloud<pcl::PointXYZI>::Ptr surfPointsLessFlatScan(new pcl::PointCloud<pcl::PointXYZI>);
 
-		//将每一线平均分成4份
+		//将每一线平均分成6份
 		for(int j = 0; j < 6; j ++)
 		{
 			int sp = (scanStartInd[i] * (6 - j) + scanEndInd[i] * j) / 6;    //开始下标
@@ -278,13 +278,13 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
 				if(cloudNeighborPicked[ind] == 0 && cloudCurvature[ind] > 0.1)
 				{
 					largestPickedNum ++;
-					if(largestPickedNum <= 2)     //选取5个点为边缘点
+					if(largestPickedNum <= 2)     //选取2个点为边缘点
 					{
 						cloudLabel[ind] = 2;
 						cornerPointsSharp.push_back(laserCloud->points[ind]);
 						cornerPointsLessSharp.push_back(laserCloud->points[ind]);
 					}
-					else if(largestPickedNum <= 20)     //选取50个点为次边缘点
+					else if(largestPickedNum <= 20)     //选取20个点为次边缘点
 					{
 						cloudLabel[ind] = 1;
 						cornerPointsLessSharp.push_back(laserCloud->points[ind]);
@@ -339,7 +339,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
 					surfPointsFlat.push_back(laserCloud->points[ind]);
 
 					smallestPickedNum ++;
-					if(smallestPickedNum >= 4)     //选取10个平面点作为平面点
+					if(smallestPickedNum >= 4)     //选取4个平面点作为平面点
 					{
 						break;
 					}
