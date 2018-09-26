@@ -1,6 +1,7 @@
 #include <cmath>
 #include <vector>
 
+#include "common.h"
 #include <opencv/cv.h>
 #include <nav_msgs/Odometry.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -28,14 +29,12 @@ ros::Publisher pubSurfPointsLessFlat;       //次平面点
 void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
 {
 
-	std::cout << "......................" << std::endl;
-
 	std::vector<int> scanStartInd(N_SCANS,0);     //每一线的开始下标
 	std::vector<int> scanEndInd(N_SCANS,0);       //每一线的结束下标
 
 	double timeScanCur = laserCloudMsg->header.stamp.toSec();  //时间戳
-	pcl::PointCloud<pcl::PointXYZI> laserCloudIn;
-	pcl::fromROSMsg(*laserCloudMsg, laserCloudIn);		//sensor_msgs::PoinrCloud2->pcl::PointCloud<pcl::PointXYZI>
+	pcl::PointCloud<PointType> laserCloudIn;
+	pcl::fromROSMsg(*laserCloudMsg, laserCloudIn);		//sensor_msgs::PoinrCloud2->pcl::PointCloud<PointType>
 	std::vector<int> indices;
 	pcl::removeNaNFromPointCloud(laserCloudIn, laserCloudIn, indices);   //剔除NaN点
 	int cloudSize = laserCloudIn.points.size();		//点云数量
@@ -52,8 +51,8 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
 	}
 
 	int count = cloudSize;
-	pcl::PointXYZI point;
-	std::vector<pcl::PointCloud<pcl::PointXYZI> > laserCloudScans(N_SCANS);
+	PointType point;
+	std::vector<pcl::PointCloud<PointType> > laserCloudScans(N_SCANS);
 	bool halfPassed = false;
 
 	for(int i = 0; i < cloudSize; i ++)
@@ -61,7 +60,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
 		point = laserCloudIn.points[i];
 
 		//计算线号
-		float angle = atan(point.z / sqrt(point.x * point.x + point.y * point.y)) * 180 / M_PI;    
+		float angle = rad2deg(atan(point.z / sqrt(point.x * point.x + point.y * point.y)));    
 		int scanID;
 		int roundedAngle = round(angle);   //角度进行四舍五入转换成整数
 
@@ -117,8 +116,8 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
 	}
 	cloudSize = count;
 
-
-	pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloud(new pcl::PointCloud<pcl::PointXYZI>());
+	//按照线号从小到大排序
+	pcl::PointCloud<PointType>::Ptr laserCloud(new pcl::PointCloud<PointType>());
 	for(int i = 0; i < N_SCANS; i ++)
 	{
 		*laserCloud += laserCloudScans[i];
@@ -129,7 +128,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
 	std::vector<int> cloudNeighborPicked(cloudSize,0); //是否参与特征点选取
 	std::vector<int> cloudLabel(cloudSize,0);          //哪一类特征点
 	
-	int scanCount = -1;     //表示当前点的线号
+	int scanCount = -1;     //初始化线号为-1
 	for (int i = 5; i < cloudSize - 5; i++)    //从第5个点开始到倒数第5个点结束，使用前后5个点用来算曲率 
 	{
 		float diffX = laserCloud->points[i - 5].x + laserCloud->points[i - 4].x
@@ -240,15 +239,15 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
 	}
 
 
-	pcl::PointCloud<pcl::PointXYZI> cornerPointsSharp;           //边缘点
-	pcl::PointCloud<pcl::PointXYZI> cornerPointsLessSharp;       //次边缘点
-	pcl::PointCloud<pcl::PointXYZI> surfPointsFlat;              //平面点
-	pcl::PointCloud<pcl::PointXYZI> surfPointsLessFlat;          //次平面点
+	pcl::PointCloud<PointType> cornerPointsSharp;           //边缘点
+	pcl::PointCloud<PointType> cornerPointsLessSharp;       //次边缘点
+	pcl::PointCloud<PointType> surfPointsFlat;              //平面点
+	pcl::PointCloud<PointType> surfPointsLessFlat;          //次平面点
 
 	//每一线选取若干个特征点
 	for(int i = 0; i < N_SCANS; i ++)
 	{
-		pcl::PointCloud<pcl::PointXYZI>::Ptr surfPointsLessFlatScan(new pcl::PointCloud<pcl::PointXYZI>);
+		pcl::PointCloud<PointType>::Ptr surfPointsLessFlatScan(new pcl::PointCloud<PointType>);
 
 		//将每一线平均分成6份
 		for(int j = 0; j < 6; j ++)
@@ -390,8 +389,8 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
 		}
 
 		//平面点太多，进行下采样
-		pcl::PointCloud<pcl::PointXYZI> surfPointsLessFlatScanDS;
-		pcl::VoxelGrid<pcl::PointXYZI> downSizeFilter;
+		pcl::PointCloud<PointType> surfPointsLessFlatScanDS;
+		pcl::VoxelGrid<PointType> downSizeFilter;
 		downSizeFilter.setInputCloud(surfPointsLessFlatScan);
 		downSizeFilter.setLeafSize(0.2,0.2,0.2);
 		downSizeFilter.filter(surfPointsLessFlatScanDS);

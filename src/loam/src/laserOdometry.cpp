@@ -31,42 +31,42 @@ bool newSurfPointsLessFlat = false;       //次平面点消息更新标志
 bool newLaserCloudFullRes = false;        //点云消息更新标志
 
 //边缘点和次边缘点
-pcl::PointCloud<pcl::PointXYZI>::Ptr cornerPointsSharp(new pcl::PointCloud<pcl::PointXYZI>);
-pcl::PointCloud<pcl::PointXYZI>::Ptr cornerPointsLessSharp(new pcl::PointCloud<pcl::PointXYZI>);
+pcl::PointCloud<PointType>::Ptr cornerPointsSharp(new pcl::PointCloud<PointType>);
+pcl::PointCloud<PointType>::Ptr cornerPointsLessSharp(new pcl::PointCloud<PointType>);
 
 //平面点和次平面点
-pcl::PointCloud<pcl::PointXYZI>::Ptr surfPointsFlat(new pcl::PointCloud<pcl::PointXYZI>);
-pcl::PointCloud<pcl::PointXYZI>::Ptr surfPointsLessFlat(new pcl::PointCloud<pcl::PointXYZI>);
+pcl::PointCloud<PointType>::Ptr surfPointsFlat(new pcl::PointCloud<PointType>);
+pcl::PointCloud<PointType>::Ptr surfPointsLessFlat(new pcl::PointCloud<PointType>);
 
 //保存上一帧的次边缘点和次平面点
-pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudCornerLast(new pcl::PointCloud<pcl::PointXYZI>);
-pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudSurfLast(new pcl::PointCloud<pcl::PointXYZI>);
+pcl::PointCloud<PointType>::Ptr laserCloudCornerLast(new pcl::PointCloud<PointType>);
+pcl::PointCloud<PointType>::Ptr laserCloudSurfLast(new pcl::PointCloud<PointType>);
 
 //保存匹配点和距离信息
-pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudOri(new pcl::PointCloud<pcl::PointXYZI>);
-pcl::PointCloud<pcl::PointXYZI>::Ptr coeffSel(new pcl::PointCloud<pcl::PointXYZI>);
+pcl::PointCloud<PointType>::Ptr laserCloudOri(new pcl::PointCloud<PointType>);
+pcl::PointCloud<PointType>::Ptr coeffSel(new pcl::PointCloud<PointType>);
 
 //点云
-pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudFullRes(new pcl::PointCloud<pcl::PointXYZI>);
+pcl::PointCloud<PointType>::Ptr laserCloudFullRes(new pcl::PointCloud<PointType>);
 
 //边缘点kd树，次边缘点kd树
-pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtreeCornerLast(new pcl::KdTreeFLANN<pcl::PointXYZI>);
-pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtreeSurfLast(new pcl::KdTreeFLANN<pcl::PointXYZI>);
+pcl::KdTreeFLANN<PointType>::Ptr kdtreeCornerLast(new pcl::KdTreeFLANN<PointType>);
+pcl::KdTreeFLANN<PointType>::Ptr kdtreeSurfLast(new pcl::KdTreeFLANN<PointType>);
 
 //保存上一帧次边缘点和次平面点个数
 int laserCloudCornerLastNum;
 int laserCloudSurfLastNum;
 
 
-float transform[6] = {0};      //前三个表示旋转，后三个表示平移
-float transformSum[6] = {0};   //累积位姿
+float transform[6] = {0};      //当前帧相对于上一帧的位姿估计
+float transformSum[6] = {0};   //当前帧相对于第一帧的位姿估计
 
-//边缘点和对应的边缘线两个点
+//边缘点和对应的边缘线两个点下标
 int pointSelCornerInd[40000];
 float pointSearchCornerInd1[40000];
 float pointSearchCornerInd2[40000];
 
-//平面点和对应的三个平面三个点
+//平面点和对应的平面三个点下标
 int pointSelSurfInd[40000];
 float pointSearchSurfInd1[40000];
 float pointSearchSurfInd2[40000];
@@ -85,7 +85,7 @@ float pointSearchSurfInd3[40000];
 	transform[4] = y
 	transform[5] = z
 */
-void TransformToStart(pcl::PointXYZI const * const pi, pcl::PointXYZI * const po)
+void TransformToStart(PointType const * const pi, PointType * const po)
 {
 	float s = 10 * (pi->intensity - int(pi->intensity));   //比例
 	float rx = s * transform[0];
@@ -115,7 +115,7 @@ void TransformToStart(pcl::PointXYZI const * const pi, pcl::PointXYZI * const po
 
 
 //将所有点云转换到最后一个点的坐标系下
-void TransformToEnd(pcl::PointXYZI const * const pi, pcl::PointXYZI * const po)
+void TransformToEnd(PointType const * const pi, PointType * const po)
 {
 	//先将所有点转换到第一个点坐标系下
 	float s = 10 * (pi->intensity - int(pi->intensity));
@@ -291,7 +291,7 @@ int main(int argc,char **argv)
 	std::vector<int> pointSearchInd;         //保存下标
 	std::vector<float> pointSearchSqDis;     //保存距离
 
-	pcl::PointXYZI pointOri, pointSel, tripod1, tripod2, tripod3, pointProj, coeff;
+	PointType pointOri, pointSel, tripod1, tripod2, tripod3, pointProj, coeff;
 
 	bool isDegenerate = false;
 
@@ -310,7 +310,7 @@ int main(int argc,char **argv)
 		     fabs(timeCornerPointsLessSharp - timeSurfPointsLessFlat) < 0.005 &&
 		     fabs(timeSurfPointsFlat - timeSurfPointsLessFlat) < 0.005 &&
 			 fabs(timeLaserCloudFullRes - timeSurfPointsLessFlat) < 0.005) 
-		{  //同步作用，确保同时收到同一个点云的特征点以及IMU信息才进入
+		{  //同步作用，确保同时收到同一个点云的特征点才进入
 			 newCornerPointsSharp = false;
 			 newCornerPointsLessSharp = false;
 			 newSurfPointsFlat = false;
@@ -322,7 +322,7 @@ int main(int argc,char **argv)
 			 {
 
 				 //laserCloudCornerLast = cornerPointsLessSharp赋值操作
-				 pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudTemp = cornerPointsLessSharp;
+				 pcl::PointCloud<PointType>::Ptr laserCloudTemp = cornerPointsLessSharp;
 				 cornerPointsLessSharp = laserCloudCornerLast;
 				 laserCloudCornerLast = laserCloudTemp;
 
@@ -369,7 +369,7 @@ int main(int argc,char **argv)
 				//迭代次数25次
 				for(int iterCount = 0; iterCount < 25; iterCount ++)
 				{
-					laserCloudOri->clear();     //保存匹配好的点云
+					laserCloudOri->clear();     //保存匹配好的点
 					coeffSel->clear();          //保存点线距或者点面距
 
 					//边缘点处理
@@ -463,15 +463,20 @@ int main(int argc,char **argv)
 							float z2 = tripod2.z;
 
 							/*
-							点线距公式：d = |(x0 - x1)×(x0 - x2)|
-											-------------------
+											 |(x0 - x1)×(x0 - x2)|
+							点线距公式：d = -------------------
 												|x1 - x2|
+							
 							a012 = |(x0 - x1)×(x0 - x2)|    分子
 							l12 = |x1 - x2|    分母
 							ld2 = a012 / l12  点线距
-							la = 
-							lb =
-							lc = 
+							
+																((x0 - x1) × (x0 - x2))
+												   (x1 - x2) × -------------------------
+																|(x0 - x1) × (x0 - x2)|
+							距离向量d(la,lb,lc) =  -------------------------------------
+																|x1 - x2|
+
 							*/
 							float a012 = sqrt(((x0 - x1)*(y0 - y2) - (x0 - x2)*(y0 - y1))
 									   * ((x0 - x1)*(y0 - y2) - (x0 - x2)*(y0 - y1))
@@ -482,22 +487,22 @@ int main(int argc,char **argv)
   
 							//tripod1和tripod2之间的距离
 							float l12 = sqrt((x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2) + (z1 - z2)*(z1 - z2));
-	 
-						    //x轴分量	
-							float la = ((y1 - y2)*((x0 - x1)*(y0 - y2) - (x0 - x2)*(y0 - y1))
-									 + (z1 - z2)*((x0 - x1)*(z0 - z2) - (x0 - x2)*(z0 - z1))) / a012 / l12;     
+	
+							//x轴分量
+							float la = ((y1 - y2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))
+									 - (z1 - z2) * ((x0 - x2) * (z0 - z1) - (x0 - x1) * (z0 - z2))) / a012 / l12;
+
 							//y轴分量
-							float lb = -((x1 - x2)*((x0 - x1)*(y0 - y2) - (x0 - x2)*(y0 - y1))
-									 - (z1 - z2)*((y0 - y1)*(z0 - z2) - (y0 - y2)*(z0 - z1))) / a012 / l12;
-		    
+							float lb = ((z1 - z2) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1))										 - (x1 - x2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))) / a012 / l12;
+
 							//z轴分量
-							float lc = -((x1 - x2)*((x0 - x1)*(z0 - z2) - (x0 - x2)*(z0 - z1))
-			                         + (y1 - y2)*((y0 - y1)*(z0 - z2) - (y0 - y2)*(z0 - z1))) / a012 / l12;
-			                
+							float lc = ((x1 - x2) * ((x0 - x2) * (z0 - z1) - (x0 - x1) * (z0 - z2))										 - (y1 - y2) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1))) / a012 / l12;
+							
+
 							//点到线的距离
 							float ld2 = a012 / l12;
 	
-							//计算权重吧
+							//计算权重,距离越小权重越大，距离越大权重越小
 							float s = 1;
 							if(iterCount >= 5)
 							{
@@ -622,6 +627,13 @@ int main(int argc,char **argv)
 							tripod2 = laserCloudSurfLast->points[pointSearchSurfInd2[i]];
 							tripod3 = laserCloudSurfLast->points[pointSearchSurfInd3[i]];
 
+							/*
+														(x2 - x1) × (x3 - x1)
+							平面单位法向量(pa,pb,pc) =  ------------------------
+														|(x2 - x1) × (x3 - x1)|
+
+								点面距公式 d =  point * 单位法向量
+							*/
 							//x轴分量
 							float pa = (tripod2.y - tripod1.y) * (tripod3.z - tripod1.z)
 									 - (tripod3.y - tripod1.y) * (tripod2.z - tripod1.z);
@@ -632,17 +644,20 @@ int main(int argc,char **argv)
 							float pc = (tripod2.x - tripod1.x) * (tripod3.y - tripod1.y)
 									 - (tripod3.x - tripod1.x) * (tripod2.y - tripod1.y);
 							float pd = -(pa * tripod1.x + pb * tripod1.y + pc * tripod1.z);
-
-							//点面距
+							
+							//法向量长度
 							float ps = sqrt(pa * pa + pb * pb + pc * pc);
 
+							//法向量单位化
 							pa /= ps;
 							pb /= ps;
 							pc /= ps;
 							pd /= ps;
 
+							//点面距
 							float pd2 = pa * pointSel.x + pb * pointSel.y + pc * pointSel.z + pd;
 
+							//权重计算
 							float s = 1;
 							if(iterCount >= 5)
 							{
@@ -908,7 +923,7 @@ int main(int argc,char **argv)
 			}
 
 			//laserCloudCornerLast = cornerPointsLessSharp赋值操作
-			pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudTemp = cornerPointsLessSharp;
+			pcl::PointCloud<PointType>::Ptr laserCloudTemp = cornerPointsLessSharp;
 			cornerPointsLessSharp = laserCloudCornerLast;
 			laserCloudCornerLast = laserCloudTemp;
 
