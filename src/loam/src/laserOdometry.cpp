@@ -856,27 +856,6 @@ int main(int argc,char **argv)
 			ty = y3 + transform[4];
 			tz = z3 + transform[5];
 			
-			/*
-			//距离更新
-			//绕x轴旋转
-			float x1 = transform[3];
-			float y1 = cos(transform[0]) * transform[4] + sin(transform[0]) * transform[5];
-			float z1 = -sin(transform[0]) * transform[4] + cos(transform[0]) * transform[5];
-
-			//绕y轴旋转
-			float x2 = cos(transform[1]) * x1 - sin(transform[1]) * z1;
-			float y2 = y1;
-			float z2 = sin(transform[1]) * x1 + cos(transform[1]) * z1;
-
-			//绕z轴旋转
-			float x3 = cos(transform[2]) * x2 + sin(transform[2]) * y2;
-			float y3 = -sin(transform[2]) * x2 + cos(transform[2]) * y2;
-			float z3 = z2;
-			
-			tx = transformSum[3] + x3;
-			ty = transformSum[4] + y3;
-			tz = transformSum[5] + z3;
-			*/
 			transformSum[0] = rx;
 			transformSum[1] = ry;
 			transformSum[2] = rz;
