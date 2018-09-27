@@ -478,15 +478,15 @@ int main(int argc,char **argv)
 																|x1 - x2|
 
 							*/
-							float a012 = sqrt(((x0 - x1)*(y0 - y2) - (x0 - x2)*(y0 - y1))
-									   * ((x0 - x1)*(y0 - y2) - (x0 - x2)*(y0 - y1))
-									   + ((x0 - x1)*(z0 - z2) - (x0 - x2)*(z0 - z1))
-									   * ((x0 - x1)*(z0 - z2) - (x0 - x2)*(z0 - z1))
-									   + ((y0 - y1)*(z0 - z2) - (y0 - y2)*(z0 - z1))
-									   * ((y0 - y1)*(z0 - z2) - (y0 - y2)*(z0 - z1)));
+							float a012 = sqrt(((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))
+									   * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))
+									   + ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1))
+									   * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1))
+									   + ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1))
+									   * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1)));
   
 							//tripod1和tripod2之间的距离
-							float l12 = sqrt((x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2) + (z1 - z2)*(z1 - z2));
+							float l12 = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
 	
 							//x轴分量
 							float la = ((y1 - y2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))
@@ -707,18 +707,43 @@ int main(int argc,char **argv)
 						float ty = transform[4];
 						float tz = transform[5];
 
-						float arx = (-crx * sry * srz * pointOri.x + crx * crz * sry * pointOri.y + srx * sry * pointOri.z + tx * crx * sry * srz - ty * crx * crz * sry - tz * srx * sry) * coeff.x + (srx * srz * pointOri.x - crz * srx * pointOri.y + crx *pointOri.z + ty * crz * srx - tz * crx - tx * srx * srz) * coeff.y + (crx * cry * srz * pointOri.x - crx * cry * crz * pointOri.y - cry * srx * pointOri.z + tz * cry * srx + ty * crx * cry * crz - tx * crx * cry * srz) * coeff.z;
-							   
-						float ary = ((-crz * sry - cry * srx * srz) * pointOri.x + (cry * crz * srx - sry * srz) * pointOri.y - crx * cry * pointOri.z + tx * (crz * sry + cry * srx * srz) + ty * (sry * srz - cry * crz * srx) + tz * crx * cry) * coeff.x + ((cry * crz - srx * sry * srz) * pointOri.x + (cry * srz + crz * srx * sry) * pointOri.y - crx * sry * pointOri.z + tz * crx * sry - ty * (cry * srz + crz * srx * sry) - tx * (cry * crz - srx * sry * srz)) * coeff.z;
-									     
-						float arz = ((-cry * srz - crz * srx * sry) * pointOri.x + (cry * crz - srx * sry * srz) * pointOri.y + tx * (cry * srz + crz * srx * sry) - ty * (cry * crz - srx * sry * srz)) * coeff.x + (-crx * crz * pointOri.x - crx * srz * pointOri.y + ty * crx * srz + tx * crx * crz) * coeff.y + ((cry * crz * srx - sry * srz) * pointOri.x + (crz * sry + cry * srx * srz) * pointOri.y + tx*(sry * srz - cry * crz * srx) - ty * (crz * sry + cry * srx * srz)) * coeff.z;
-											   
-						float atx = -(cry * crz - srx * sry * srz) * coeff.x + crx * srz * coeff.y - (crz * sry + cry * srx * srz) * coeff.z;
-							
-						float aty = -(cry * srz + crz * srx * sry) * coeff.x - crx * crz * coeff.y - (sry * srz - cry * crz * srx) * coeff.z;
-													
-						float atz = crx * sry * coeff.x - srx * coeff.y - crx * cry * coeff.z;
-													
+						/*
+
+						R = Rx * Ry * Rz = |cry * crz						- cry * srz							sry|
+										   |srx * sry * crz + crx * srz		- srx * sry * srz + crx * crz		- srx * cry|
+										   |srx * srz - crx * sry * crz		crx * sry * srz + srx * crz			crx * cry|
+
+									dRij											 dRij												dRij
+						float arx = ---- * (pointOti - t) * coeff        float ary = ---- * (pointOri - t) * coeff			float arz = ---- * (pointOri - t) * coeff
+									 dx												  dy												 dz
+
+						float atx = - R0j * coeff						 float aty = - R1j * coeff							float atz = - R2j * coeff
+						*/
+
+						float arx = ((crx * sry * crz - srx * srz) * pointOri.y + (crx * srz + srx * sry * crz) * pointOri.z
+									- (crx * sry * crz - srx * srz) * ty - (crx * srz + srx * sry * crz) * tz) * coeff.x 
+								  + ((- crx * sry * srz - srx * crz) * pointOri.y + (crx * crz - srx * sry * srz) * pointOri.z
+									- (- crx * sry * srz - srx * crz) * ty - (crx * crz - srx * sry * srz) * tz) * coeff.y 
+								  + ((- crx * cry) * pointOri.y + (- srx * cry) * pointOri.z 
+									- (- crx * cry) * ty - (- srx * cry) * tz) * coeff.z; 
+						
+						float ary = ((- sry * crz) * pointOri.x + (srx * cry * crz) * pointOri.y + (- crx * cry * crz) * pointOri.z
+									- (- sry * crz) * tx - (srx * cry * crz) * ty - (- crx * cry * crz) * tz) * coeff.x
+								  + ((sry * srz) * pointOri.x + (- srx * cry * srz) * pointOri.y + (crx * cry * srz) * pointOri.z
+									- (sry * srz) * tx - (- srx * cry * srz) * ty - (crx * cry * srz) * tz) * coeff.y
+								  + ((cry) * pointOri.x + (srx * sry) * pointOri.y + (- crx * sry) * pointOri.z
+									- (cry) * tx - (srx * sry) * ty - (- crx * sry) * tz) * coeff.z;
+								
+						float arz = ((- cry * srz) * pointOri.x + (crx * crz - srx * sry * srz) * pointOri.y + (srx * crz + crx * sry * srz) * pointOri.z
+									- (- cry * srz) * tx - (crx * crz - srx * sry * srz) * ty - (srx * crz + crx * sry * srz) * tz) * coeff.x
+								  + ((- cry * crz) * pointOri.x + (- srx * sry * crz - crx * srz) * pointOri.y + (crx * sry * crz - srx * srz) * pointOri.z
+									- (- cry * crz) * tx - (- srx * sry * crz - crx * srz) * ty - (crx * sry * crz - srx * srz) * tz) * coeff.y;
+
+
+						float atx = - (cry * crz) * coeff.x + (cry * srz) * coeff.y - sry * coeff.z;
+						float aty = - (srx * sry * crz + crx * srz) * coeff.x - (crx * crz - srx * sry * srz) * coeff.y + (srx * cry) * coeff.z;
+						float atz = - (srx * srz - crx * sry * crz) * coeff.x - (crx * sry * srz + srx * crz) * coeff.y - (crx * cry) * coeff.z;
+					
 						float d2 = coeff.intensity;
 
 						//matA保存雅克比矩阵
@@ -847,7 +872,7 @@ int main(int argc,char **argv)
 			float y2 = y1;
 			float z2 = -sin(transform[1]) * x1 + cos(transform[1]) * z1;
 
-			//绕z轴旋转
+			//绕x轴旋转
 			float x3 = x2;
 			float y3 = cos(transform[0]) * y2 - sin(transform[0]) * z2;
 			float z3 = sin(transform[0]) * y2 + cos(transform[0]) * z2;

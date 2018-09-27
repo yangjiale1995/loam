@@ -108,22 +108,23 @@ float transformAftMapped[6] = {0};   //transformAftMapped最终的定位结果
 //待研究代码
 void transformAssociateToMap()
 {
-	//绕y轴旋转
-	float x1 = cos(transformSum[1]) * (transformBefMapped[3] - transformSum[3])
-	         - sin(transformSum[1]) * (transformBefMapped[5] - transformSum[5]);
-	float y1 = transformBefMapped[4] - transformSum[4];
-	float z1 = sin(transformSum[1]) * (transformBefMapped[3] - transformSum[3])
-			 + cos(transformSum[1]) * (transformBefMapped[5] - transformSum[5]);
-
-    //绕x轴旋转
-	float x2 = x1;
-	float y2 = cos(transformSum[0]) * y1 + sin(transformSum[0]) * z1;
-	float z2 = -sin(transformSum[0]) * y1 + cos(transformSum[0]) * z1;
+	//绕x轴逆旋转
+	float x1 = transformBefMapped[3] - transformSum[3]; 
+	float y1 = cos(transformSum[0]) * (transformBefMapped[4] - transformSum[4])
+	         + sin(transformSum[0]) * (transformBefMapped[5] - transformSum[5]);
+	float z1 = - sin(transformSum[0]) * (transformBefMapped[4] - transformSum[4])
+			 + cos(transformSum[0]) * (transformBefMapped[5] - transformSum[5]);
 
 
-	//绕z轴旋转
+	//绕y轴逆旋转
+	float x2 = cos(transformSum[1]) * x1 - sin(transformSum[1]) * z1;
+	float y2 = y1;
+	float z2 = sin(transformSum[1]) * x1 + cos(transformSum[1]) * z1;
+
+
+	//绕z轴逆旋转
 	transformIncre[3] = cos(transformSum[2]) * x2 + sin(transformSum[2]) * y2;
-	transformIncre[4] = -sin(transformSum[2]) * x2 + cos(transformSum[2]) * y2;
+	transformIncre[4] = - sin(transformSum[2]) * x2 + cos(transformSum[2]) * y2;
 	transformIncre[5] = z2;
 
 
@@ -192,22 +193,22 @@ void transformAssociateToMap()
 								   crzcrx / cos(transformTobeMapped[0]));
 
 
-	
-
+	//绕z轴旋转
 	x1 = cos(transformTobeMapped[2]) * transformIncre[3] - sin(transformTobeMapped[2]) * transformIncre[4];
 	y1 = sin(transformTobeMapped[2]) * transformIncre[3] + cos(transformTobeMapped[2]) * transformIncre[4];
 	z1 = transformIncre[5];
-	     
-	x2 = x1;
-	y2 = cos(transformTobeMapped[0]) * y1 - sin(transformTobeMapped[0]) * z1;
-	z2 = sin(transformTobeMapped[0]) * y1 + cos(transformTobeMapped[0]) * z1;
-		    
-	transformTobeMapped[3] = transformAftMapped[3]
-						   - (cos(transformTobeMapped[1]) * x2 + sin(transformTobeMapped[1]) * z2);
-	transformTobeMapped[4] = transformAftMapped[4] - y2;
-	transformTobeMapped[5] = transformAftMapped[5]
-				           - (-sin(transformTobeMapped[1]) * x2 + cos(transformTobeMapped[1]) * z2);
 
+	//绕y轴旋转
+	x2 = cos(transformTobeMapped[1]) * x1 + sin(transformTobeMapped[1]) * z1;
+	y2 = y1;
+	z2 = - sin(transformTobeMapped[1]) * x1 + cos(transformTobeMapped[1]) * z1;
+
+	//绕x轴旋转
+	transformTobeMapped[3] = transformAftMapped[3] - x2;
+	transformTobeMapped[4] = transformAftMapped[4] - (cos(transformTobeMapped[0]) * y2 + sin(transformTobeMapped[0]) * z2);
+	transformTobeMapped[5] = transformAftMapped[5] - (- sin(transformTobeMapped[0] * y2 + cos(transformTobeMapped[0]) * z2));
+
+	
 }
 
 
@@ -831,13 +832,11 @@ int main(int argc,char **argv)
 									float l12 = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
 												   
 									float la = ((y1 - y2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))
-											 + (z1 - z2) * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1))) / a012 / l12;
+											 - (z1 - z2) * ((x0 - x2) * (z0 - z1) - (x0 - x1) * (z0 - z2))) / a012 / l12;
 												
-									float lb = -((x1 - x2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))
-											 - (z1 - z2) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1))) / a012 / l12;
+									float lb = ((z1 - z2) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1)) - (x1 - x2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))) / a012 / l12;
 														 
-									float lc = -((x1 - x2) * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1))
-											 + (y1 - y2) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1))) / a012 / l12;
+									float lc = ((x1 - x2) * ((x0 - x2) * (z0 - z1) - (x0 - x1) * (z0 - z2)) - (y1 - y2) * ((y0 - y2) * (z0 - z2) - (y0 - y2) * (z0 - z1))) / a012 / l12;
 														
 									float ld2 = a012 / l12;   //点线距
 								    
@@ -949,18 +948,19 @@ int main(int argc,char **argv)
 						{
 							pointOri = laserCloudOri->points[i];
 							coeff = coeffSel->points[i];
-							float arx = (crx * sry * srz * pointOri.x + crx * crz * sry * pointOri.y - srx * sry * pointOri.z) * coeff.x
-									  + (-srx * srz * pointOri.x - crz * srx * pointOri.y - crx * pointOri.z) * coeff.y
-									  + (crx * cry * srz * pointOri.x + crx * cry * crz * pointOri.y - cry * srx * pointOri.z) * coeff.z;
-							   
-							float ary = ((cry * srx * srz - crz * sry) * pointOri.x
-									  + (sry * srz + cry * crz * srx) * pointOri.y + crx * cry * pointOri.z) * coeff.x
-									  + ((-cry * crz - srx * sry * srz) * pointOri.x
-									  + (cry * srz - crz * srx * sry) * pointOri.y - crx * sry * pointOri.z) * coeff.z;
-								    
-							float arz = ((crz * srx * sry - cry * srz) * pointOri.x + (-cry * crz - srx * sry * srz) * pointOri.y) * coeff.x
-									  + (crx * crz * pointOri.x - crx * srz * pointOri.y) * coeff.y
-									  + ((sry * srz + cry * crz * srx) * pointOri.x + (crz * sry - cry * srx * srz) * pointOri.y) * coeff.z;
+							
+							
+							float arx = ((crx * sry * crz + srx * srz) * pointOri.y + (- srx * sry * crz + crx * srz) * pointOri.z) * coeff.x 
+									  + ((crx * sry * srz - srx * crz) * pointOri.y + (- srx * sry * srz - crx * crz) * pointOri.z) * coeff.y 
+									  + ((crx * cry) * pointOri.y + (- srx * cry) * pointOri.z) * coeff.z;
+
+							float ary = ((- sry * crz) * pointOri.x + (srx * cry * crz) * pointOri.y + (crx * cry * crz) * pointOri.z) * coeff.x 
+									  + ((- sry * srz) * pointOri.x + (srx * cry * srz) * pointOri.y + (crx * cry * srz) * pointOri.z) * coeff.y 
+									  + ((- cry) * pointOri.x + (- srx * sry) * pointOri.y + (- crx * sry) * pointOri.z) * coeff.z;
+
+							float arz = ((- cry * srz) * pointOri.x + (- srx * sry * srz - crx * crz) * pointOri.y + (srx * crz - crx * sry * srz) * pointOri.z) * coeff.x 
+									  + ((cry * crz) * pointOri.x + (srx * sry * crz - crx * srz) * pointOri.y + (crx * sry * crz + srx * srz) * pointOri.z) * coeff.y;
+
 
 							//构建雅克比矩阵	
 							matA.at<float>(i, 0) = arx;
